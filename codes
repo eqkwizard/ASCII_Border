@@ -1,0 +1,155 @@
+# Asuuming border printout start top-left, finish top row, then go down
+# So my thinking is: sort all elements based on y decending, and x accending orders.
+# Output will initially be a matrix of (' ', '+', '-', '|'). ' ' is padded to the
+# front of each row to line up with the left-most element. Plan to start to fill the
+# matrix from top left square, go right till turn, then just follow the border till
+# read the starting square.
+def draw_borders(shape):
+    figure = list(shape)
+    #print(figure)
+    # put coordinate to top left corner, so top of shape starts at y=1, left of shape starts at x=1
+    yarr = [pt[1] for pt in figure]
+    xarr = [pt[0] for pt in figure]
+    tp, bp, lp, rp = max(yarr), min(yarr), min(xarr), max(xarr)
+    figure = [(pt[0]-lp +1, tp - pt[1] +1) for pt in figure]
+    #print(figure)
+    bp = tp-bp +1
+    tp = 1
+    rp = rp-lp +1
+    lp = 1
+
+    yarr = range(bp+2)
+    fig_dict = dict.fromkeys(yarr)
+    for y in yarr:
+        fig_dict[y] = sorted( [pt for pt in figure if pt[1] == y], key = lambda pt: pt[0] )
+    #print(fig_dict)
+
+    # because the printing, border row number is using y, colomn is using x
+    border = [ [' ' for i in range(rp+2)] for j in range(bp+2) ]
+
+    # Start top left corner, go righr first: dx=1, dy=0
+    x0 = fig_dict[1][0][0]
+    border[0][x0-1] = '+'
+    border[0][x0] = '-'
+    y0 = 0
+    #print("starting pt:", x, y, border)
+    #print("stopping pt: ", x0, y0)
+    if (x0+1, y0+1) in fig_dict[y0+1]: # not blocked & shape continues at same h-level
+        dir = 'R'
+        x = x0+1
+        y = y0
+        border[y][x] = '-'
+    else: # no sq in front, no sq at same horizontal level, so must go down
+        border[y0][x0+1] = '+' # so a new corner formed
+        dir = 'D'  # now must go down
+        x = x0+1
+        y = y0+1
+        border[y][x] = '|'
+        #print("no sq in front & no sq at h-level, turnig down", x, y)
+
+    # Going clockwise around the shape. start above shape, going 'R'. 4 dir: 'R', 'U', 'D', 'L'
+    # (x,y) is the current border coordinate, (x1,y1) could be next border coordinate
+    while (x != x0 or y != y0):
+        #print("Step: ", dir, x, y)
+        if dir == 'R': # Was going 'R', so above the shape. check if there's sq in front
+            x1 = x+1
+            y1 = y+1
+            if (x1, y) in fig_dict[y]: # blocked, go up:
+                border[y][x] = '+' # turning from 'R' to 'U'
+                dir = 'U'
+                #print("going R, got blocked, turning U", x, y)
+            elif (x1, y1) in fig_dict[y1]: # not blocked & shape continues at same h-level
+                #border[y][x] = '-' # keep going 'R'
+                dir = 'R'
+                x = x1
+                #print("keeping going R", x, y)
+                if border[y][x] != '+':
+                    border[y][x] = '-'
+            else: # no sq in front, no sq at same horizontal level, so must go down
+                #border[y][x] = '-'
+                border[y][x1] = '+' # so a new corner formed
+                dir = 'D'  # now must go down
+                x = x1
+                y = y1
+                if border[y][x] != '+':
+                    border[y][x] = '|'
+                #print("no sq in front & no sq at h-level, turnig down", x, y)
+        elif dir == 'D':
+            x1 = x-1
+            y1 = y+1
+            if (x, y1) in fig_dict[y1]: # blocked, can only go 'R':
+                border[y][x] = '+' # now we know it's actually a corner
+                dir = 'R'
+                #print("going down, got blocked, turning R", x, y)
+            elif (x1, y1) in fig_dict[y1]: # not blocked & shape continues at same v-level
+                #border[y][x] = '|' # keep going 'D'
+                dir = 'D'
+                y = y1
+                #print("keeing going D", x, y)
+                if border[y][x] != '+':
+                    border[y][x] = '|'
+            else: # no sq in front, no sq at same v-level, so must turn & go 'L'
+                #border[y][x] = '|'
+                border[y1][x] = '+' # a new corner formed
+                dir = 'L'  # now must go left
+                x = x1
+                y = y1
+                if border[y][x] != '+':
+                    border[y][x] = '-'
+                #print("was going D, turning L", x, y)
+        elif dir == 'L':
+            x1 = x-1
+            y1 = y-1
+            if (x1, y) in fig_dict[y]: # blocked, can only go 'D':
+                border[y][x] = '+' # now we know it's actually a corner
+                dir = 'D'
+                #print("was going L, got blocked, turning D", x, y)
+            elif (x1, y1) in fig_dict[y1]: # not blocked & shape continues at same h-level
+                #border[y][x] = '-' # keep going 'L'
+                dir = 'L'
+                x = x1
+                #print("keeping going L", x, y)
+                if border[y][x] != '+':
+                    border[y][x] = '-'
+            else: # no sq in front, no sq at same h-level, so must turn & go 'U'
+                #border[y][x] = '-'
+                border[y][x1] = '+' # a new corner formed
+                dir = 'U'  # now must go up
+                x = x1
+                y = y1
+                if border[y][x] != '+':
+                    border[y][x] = '|'
+                #print("was going L, turning U", x, y)
+        else:
+            x1 = x+1
+            y1 = y-1
+            if (x, y1) in fig_dict[y1]: # blocked, can only go 'L':
+                border[y][x] = '+' # now we know it's actually a corner
+                dir = 'L'
+                #print("was going U, got blocked, turning L", x, y)
+            elif (x1, y1) in fig_dict[y1]: # not blocked & shape continues at same v-level
+                #border[y][x] = '|' # keep going 'U'
+                dir = 'U'
+                y = y1
+                #print("keeping going U", x, y)
+                if border[y][x] != '+':
+                    border[y][x] = '|'
+            else: # no sq in front & no sq at same v-level, so must turn & go 'R'
+                #border[y][x] = '|'
+                border[y1][x] = '+' # a new corner formed
+                dir = 'R'  # now must go up
+                x = x1
+                y = y1
+                if border[y][x] != '+':
+                    border[y][x] = '-'
+                #print("was going U, missing step, turning R", x, y)
+    
+    # strip trailing ' ', can't use strip() as it strip both head and tail
+    for j in range(bp+2):
+        i = -1
+        while border[j][i] == ' ':
+            border[j][i] = ''
+            i -= 1
+        #print("row: ", j, border[j])
+    
+    return '\n'.join([ ''.join([border[j][i] for i in range(rp+2)]) for j in range(bp+2) ])
